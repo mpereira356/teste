@@ -1,0 +1,2479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle Comercial 2026 - MP Bios</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+</script>
+<style>
+  :root {
+    --primary: #1e40af;
+    --primary-light: #3b82f6;
+    --success: #16a34a;
+    --warning: #ea580c;
+    --danger: #dc2626;
+    --cyan: #0891b2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-700: #374151;
+    --gray-900: #111827;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.5;
+  }
+  .app-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 32px; padding-bottom: 16px;
+    border-bottom: 2px solid var(--gray-200);
+    flex-wrap: wrap; gap: 16px;
+  }
+  .header h1 { font-size: 1.75rem; color: var(--primary); }
+  .header p { color: var(--gray-700); font-size: 0.875rem; }
+  .header-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+  .data-ref {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: white; padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--gray-300); font-size: 0.8rem;
+  }
+  .data-ref label { color: var(--gray-700); font-weight: 600; }
+  .data-ref input {
+    border: none; font-family: inherit; font-size: 0.8rem;
+    color: var(--gray-900); outline: none; background: transparent;
+  }
+
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 24px;
+    background: white; padding: 6px; border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); width: fit-content;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 10px 20px; border-radius: 8px; border: none;
+    background: transparent; cursor: pointer; font-weight: 600;
+    color: var(--gray-700); transition: all 0.2s; font-size: 0.875rem;
+  }
+  .tab:hover { background: var(--gray-100); }
+  .tab.active { background: var(--primary); color: white; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .filtros {
+    display: flex; gap: 8px; margin-bottom: 20px;
+    background: white; padding: 6px; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); width: fit-content;
+    flex-wrap: wrap;
+  }
+  .filtro {
+    padding: 8px 16px; border-radius: 6px; border: none;
+    background: transparent; cursor: pointer; font-weight: 600;
+    color: var(--gray-700); font-size: 0.8rem; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .filtro:hover { background: var(--gray-100); }
+  .filtro.active { background: var(--primary); color: white; }
+
+  /* Controles de filtro/agrupamento das comissões */
+  .controles-comissoes {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px; margin-bottom: 20px;
+    background: white; padding: 12px 16px; border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); flex-wrap: wrap;
+  }
+  .filtro-datas {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 0.85rem; color: var(--gray-700);
+  }
+  .filtro-datas label { font-weight: 600; }
+  .filtro-datas input[type="date"] {
+    padding: 6px 10px; border: 1px solid var(--gray-300);
+    border-radius: 6px; font-size: 0.8rem; font-family: inherit;
+  }
+  .agrupamento-toggle {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.85rem; font-weight: 600; color: var(--gray-700);
+  }
+  .agrupamento-toggle input[type="checkbox"] {
+    width: 18px; height: 18px; cursor: pointer;
+    accent-color: var(--primary);
+  }
+  .agrupamento-toggle label {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; user-select: none;
+  }
+
+  /* Linhas de grupo (DEV agrupado) */
+  .grupo-dev-row td {
+    background: #eff6ff !important;
+    border-top: 2px solid var(--primary) !important;
+    padding: 12px 16px !important;
+  }
+  .grupo-dev-row:hover td {
+    background: #dbeafe !important;
+  }
+  .grupo-dev-titulo {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .grupo-dev-titulo .dev-info {
+    font-size: 0.78rem; color: var(--gray-700); font-weight: 600;
+  }
+  .grupo-dev-titulo .dev-total {
+    margin-left: auto; font-size: 0.9rem; color: var(--success);
+    font-weight: 800;
+  }
+  .btn-toggle-grupo {
+    background: none; border: none; cursor: pointer;
+    color: var(--primary); font-size: 0.85rem; font-weight: 700;
+    padding: 4px 8px; border-radius: 4px;
+  }
+  .btn-toggle-grupo:hover { background: var(--gray-200); }
+
+  /* Sub-linhas (parcelas do grupo) */
+  .sub-linha-dev td:first-child {
+    padding-left: 40px !important;
+    position: relative;
+  }
+  .sub-linha-dev td:first-child::before {
+    content: '└─';
+    position: absolute; left: 20px;
+    color: var(--gray-300); font-weight: 700;
+  }
+  .sub-linha-dev td {
+    background: #f8fafc;
+  }
+  .sub-linha-dev:last-child td {
+    border-bottom: 2px solid var(--gray-300) !important;
+  }
+
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px; margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: white; border-radius: 12px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-left: 4px solid var(--primary);
+    transition: transform 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .kpi-card.success { border-left-color: var(--success); }
+  .kpi-card.warning { border-left-color: var(--warning); }
+  .kpi-card.danger { border-left-color: var(--danger); }
+  .kpi-card.servico { border-left-color: var(--cyan); }
+  .kpi-label {
+    font-size: 0.75rem; color: var(--gray-700); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 8px; font-weight: 600;
+  }
+  .kpi-value { font-size: 1.75rem; font-weight: 700; color: var(--gray-900); }
+  .kpi-sub { font-size: 0.8rem; color: var(--gray-700); margin-top: 4px; }
+  .progress-bar {
+    height: 8px; background: var(--gray-200); border-radius: 4px;
+    overflow: hidden; margin-top: 12px;
+  }
+  .progress-fill {
+    height: 100%; background: var(--primary); border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+  .progress-fill.success { background: var(--success); }
+  .progress-fill.warning { background: var(--warning); }
+  .progress-fill.danger { background: var(--danger); }
+
+  .comissoes-pair {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; margin-bottom: 32px;
+  }
+  .comissao-card {
+    background: white; border-radius: 12px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-top: 4px solid var(--primary);
+  }
+  .comissao-card.receber { border-top-color: var(--warning); }
+  .comissao-card.pagas { border-top-color: var(--success); }
+  .comissao-card .titulo {
+    font-size: 0.9rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .comissao-card.receber .titulo { color: var(--warning); }
+  .comissao-card.pagas .titulo { color: var(--success); }
+  .comissao-card .valor {
+    font-size: 2rem; font-weight: 700; color: var(--gray-900);
+    margin-bottom: 4px;
+  }
+  .comissao-card .qtd { font-size: 0.8rem; color: var(--gray-700); }
+
+  .charts-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px; margin-bottom: 32px;
+  }
+  .chart-card {
+    background: white; border-radius: 12px; padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative; height: 340px;
+  }
+  .chart-card h3 { font-size: 1rem; margin-bottom: 16px; color: var(--gray-900); }
+
+  .table-container {
+    background: white; border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .table-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--gray-200);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .table-header h2 { font-size: 1.15rem; color: var(--gray-900); }
+  .table-header .badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: var(--gray-50); padding: 12px 16px; text-align: left;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--gray-700);
+    border-bottom: 1px solid var(--gray-200); white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px; border-bottom: 1px solid var(--gray-100);
+    font-size: 0.85rem;
+  }
+  tr:hover td { background: var(--gray-50); }
+
+  .badge {
+    display: inline-block; padding: 4px 10px; border-radius: 12px;
+    font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+  }
+  .badge-success { background: #dcfce7; color: #166534; }
+  .badge-warning { background: #fef3c7; color: #92400e; }
+  .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-info { background: #dbeafe; color: #1e40af; }
+  .badge-gray { background: var(--gray-200); color: var(--gray-700); }
+  .badge-cyan { background: #cffafe; color: #155e75; }
+  .badge-venda { background: #dcfce7; color: #166534; }
+  .badge-servico { background: #cffafe; color: #155e75; }
+
+  .btn {
+    padding: 10px 18px; border-radius: 8px; border: none;
+    font-weight: 600; cursor: pointer; transition: all 0.2s;
+    font-size: 0.85rem; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #15803d; }
+  .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+  .btn-outline:hover { background: var(--gray-50); }
+  .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #b91c1c; }
+
+  .chk-pago {
+    width: 18px; height: 18px; cursor: pointer;
+    accent-color: var(--success);
+  }
+
+  .alert {
+    padding: 14px 16px; border-radius: 8px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 12px; font-size: 0.875rem;
+  }
+  .alert-warning { background: #fef3c7; border-left: 4px solid var(--warning); color: #92400e; }
+  .alert-danger { background: #fee2e2; border-left: 4px solid var(--danger); color: #991b1b; }
+  .alert-info { background: #dbeafe; border-left: 4px solid var(--primary); color: #1e40af; }
+  .alert-success { background: #dcfce7; border-left: 4px solid var(--success); color: #166534; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: white; border-radius: 16px; padding: 32px;
+    max-width: 900px; width: 100%; max-height: 92vh; overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal h2 { margin-bottom: 8px; color: var(--gray-900); }
+  .modal .modal-desc { color: var(--gray-700); font-size: 0.85rem; margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block; margin-bottom: 6px; font-size: 0.85rem;
+    font-weight: 600; color: var(--gray-700);
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--gray-300);
+    border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+    transition: border 0.2s;
+  }
+  .form-group textarea { resize: vertical; min-height: 100px; font-family: 'Courier New', monospace; font-size: 0.8rem; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30,64,175,0.1);
+  }
+  .modal-actions {
+    display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--gray-300);
+    border-radius: 12px; padding: 24px 20px;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s; background: var(--gray-50);
+    margin-bottom: 16px;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--primary); background: #eff6ff;
+  }
+  .drop-zone-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .drop-zone-text { font-weight: 600; color: var(--gray-700); margin-bottom: 4px; }
+  .drop-zone-hint { font-size: 0.75rem; color: var(--gray-700); }
+
+  .import-tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    background: var(--gray-100); padding: 4px; border-radius: 8px;
+  }
+  .import-tab {
+    flex: 1; padding: 8px 12px; border-radius: 6px; border: none;
+    background: transparent; cursor: pointer; font-weight: 600;
+    color: var(--gray-700); font-size: 0.8rem; transition: all 0.2s;
+  }
+  .import-tab.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .import-pane { display: none; }
+  .import-pane.active { display: block; }
+
+  .file-list {
+    max-height: 180px; overflow-y: auto; border: 1px solid var(--gray-200);
+    border-radius: 8px; margin-bottom: 12px; background: var(--gray-50);
+  }
+  .file-item {
+    padding: 8px 12px; border-bottom: 1px solid var(--gray-200);
+    display: flex; align-items: center; gap: 8px; font-size: 0.8rem;
+  }
+  .file-item:last-child { border-bottom: none; }
+  .file-item .icon { font-size: 1.1rem; }
+  .file-item .nome { flex: 1; font-weight: 600; color: var(--gray-700); }
+  .file-item .status { font-size: 0.7rem; }
+  .file-item.ok .status { color: var(--success); }
+  .file-item.erro .status { color: var(--danger); }
+  .file-item.processando .status { color: var(--warning); }
+
+  .progress-geral {
+    height: 6px; background: var(--gray-200); border-radius: 3px;
+    overflow: hidden; margin-bottom: 12px;
+  }
+  .progress-geral-fill {
+    height: 100%; background: var(--primary);
+    transition: width 0.3s ease; width: 0%;
+  }
+
+  .preview-table {
+    max-height: 320px; overflow-y: auto; border: 1px solid var(--gray-200);
+    border-radius: 8px; margin-top: 12px;
+  }
+  .preview-table table { font-size: 0.75rem; }
+  .preview-table th, .preview-table td { padding: 6px 8px; }
+  .preview-table input[type="text"],
+  .preview-table input[type="number"],
+  .preview-table select {
+    width: 100%; padding: 4px 6px; font-size: 0.75rem;
+    border: 1px solid var(--gray-300); border-radius: 4px;
+    font-family: inherit;
+  }
+  .preview-table input.dev-duplicado {
+    border-color: var(--danger);
+    background: #fee2e2;
+    font-weight: 700;
+    color: var(--danger);
+  }
+
+  .preview-info {
+    padding: 10px 12px; background: #dbeafe; color: #1e40af;
+    border-radius: 6px; font-size: 0.8rem; margin-top: 12px;
+  }
+  .preview-error {
+    padding: 10px 12px; background: #fee2e2; color: #991b1b;
+    border-radius: 6px; font-size: 0.8rem; margin-top: 12px;
+  }
+  .preview-warning {
+    padding: 10px 12px; background: #fef3c7; color: #92400e;
+    border-radius: 6px; font-size: 0.8rem; margin-top: 12px;
+    border-left: 4px solid var(--warning);
+  }
+  .preview-loading {
+    padding: 10px 12px; background: #fef3c7; color: #92400e;
+    border-radius: 6px; font-size: 0.8rem; margin-top: 12px;
+  }
+
+  .detalhe-row { background: #f0f9ff; }
+  .detalhe-row td { padding: 8px 16px; font-size: 0.75rem; }
+  .detalhe-comissoes { list-style: none; }
+  .detalhe-comissoes li {
+    padding: 4px 0; display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--gray-200); flex-wrap: wrap;
+  }
+  .detalhe-comissoes li:last-child { border-bottom: none; }
+
+  .btn-toggle-detalhes {
+    background: none; border: none; cursor: pointer;
+    color: var(--primary); font-weight: 600; font-size: 0.75rem;
+    text-decoration: underline; padding: 0;
+  }
+
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .font-mono { font-family: 'Courier New', monospace; }
+  .text-success { color: var(--success); }
+  .text-danger { color: var(--danger); }
+  .text-warning { color: var(--warning); }
+  .text-cyan { color: var(--cyan); }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--gray-700); }
+
+  @media (max-width: 768px) {
+    .app-container { padding: 16px; }
+    .header h1 { font-size: 1.35rem; }
+    .charts-grid, .comissoes-pair { grid-template-columns: 1fr; }
+    .kpi-value { font-size: 1.4rem; }
+    .comissao-card .valor { font-size: 1.5rem; }
+    th, td { padding: 8px 10px; font-size: 0.75rem; }
+    .modal { padding: 20px; }
+    .controles-comissoes { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <header class="header">
+    <div>
+      <h1>📊 Controle Comercial 2026</h1>
+      <p>MP Bios Representação e Serviços LTDA · Informe: <strong id="dataInformeHeader">09/09/2026</strong></p>
+    </div>
+    <div class="header-actions">
+      <div class="data-ref">
+        <label>📅 Data ref.:</label>
+        <input type="date" id="dataReferencia" value="2026-09-12">
+      </div>
+      <button class="btn btn-outline" onclick="App.abrirModalImportar()">📤 Importar</button>
+      <button class="btn btn-primary" onclick="App.exportar()">📥 Exportar</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="dashboard">📈 Dashboard</button>
+    <button class="tab" data-tab="pedidos">📋 Pedidos</button>
+    <button class="tab" data-tab="comissoes">💰 Comissões</button>
+  </nav>
+
+  <section class="tab-content active" id="tab-dashboard">
+    <div id="alertas"></div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="comissoes-pair">
+      <div class="comissao-card receber">
+        <div class="titulo">⏳ Comissões a Receber</div>
+        <div class="valor" id="dashComissoesReceber">R$ 0,00</div>
+        <div class="qtd" id="dashComissoesReceberQtd">0 lançamento(s)</div>
+      </div>
+      <div class="comissao-card pagas">
+        <div class="titulo">✅ Comissões Recebidas</div>
+        <div class="valor" id="dashComissoesPagas">R$ 0,00</div>
+        <div class="qtd" id="dashComissoesPagasQtd">0 lançamento(s)</div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Vendas por Região vs Meta</h3><canvas id="chartRegiao"></canvas></div>
+      <div class="chart-card"><h3>Composição Vendas / Serviços</h3><canvas id="chartComposicao"></canvas></div>
+    </div>
+  </section>
+
+  <section class="tab-content" id="tab-pedidos">
+    <div class="filtros">
+      <button class="filtro active" data-filtro="todos">📋 Todos</button>
+      <button class="filtro" data-filtro="VENDA">💰 Vendas</button>
+      <button class="filtro" data-filtro="SERVICO">🔧 Serviços</button>
+    </div>
+
+    <div class="kpi-grid" id="pedidosKpiGrid" style="margin-bottom:24px;"></div>
+
+    <div class="table-container">
+      <div class="table-header">
+        <h2 id="tituloTabelaPedidos">Todos os Pedidos</h2>
+        <div class="badges">
+          <span id="totalPedidos" class="badge badge-info"></span>
+          <span id="valorTotalPedidos" class="badge badge-success"></span>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Cód.</th>
+              <th>Tipo</th>
+              <th>Hospital/Clínica</th>
+              <th>Região</th>
+              <th class="text-right">Valor Total</th>
+              <th class="text-right">Valor Base Comissão</th>
+              <th class="text-center">Comissões</th>
+              <th class="text-right">Total Pago</th>
+              <th class="text-center">% Recebido</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaPedidos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-content" id="tab-comissoes">
+    <div class="controles-comissoes">
+      <div class="filtro-datas">
+        <label>📅 Dt Emissão:</label>
+        <input type="date" id="filtroDtDe" title="Data inicial">
+        <span>até</span>
+        <input type="date" id="filtroDtAte" title="Data final">
+        <button class="btn btn-sm btn-outline" onclick="App.limparFiltroDatas()">✖ Limpar</button>
+      </div>
+      <div class="agrupamento-toggle">
+        <label>
+          <input type="checkbox" id="toggleAgruparDev">
+          🔀 Agrupar por DEV
+        </label>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="table-header">
+        <h2>Comissões a Receber</h2>
+        <div class="badges">
+          <span id="comissoesVencidas" class="badge badge-danger" style="display:none;"></span>
+          <span id="totalComissoes" class="badge badge-warning"></span>
+          <span id="infoFiltro" class="badge badge-gray" style="display:none;"></span>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Dev.</th>
+              <th>Dt Emissão</th>
+              <th>Nº Pedido</th>
+              <th>Cliente</th>
+              <th>Data do Informe</th>
+              <th>Previsão de Pagamento</th>
+              <th class="text-right">Base</th>
+              <th class="text-right">%</th>
+              <th class="text-right">Comissão</th>
+              <th class="text-center">Pago?</th>
+              <th class="text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaComissoes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="table-header">
+        <h2>Comissões Recebidas</h2>
+        <div class="badges">
+          <span id="totalComissoesPagas" class="badge badge-success"></span>
+          <span id="infoFiltroPagas" class="badge badge-gray" style="display:none;"></span>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Dev.</th>
+              <th>Dt Emissão</th>
+              <th>Nº Pedido</th>
+              <th>Cliente</th>
+              <th>Data do Informe</th>
+              <th>Pago em</th>
+              <th class="text-right">Base</th>
+              <th class="text-right">%</th>
+              <th class="text-right">Comissão</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaComissoesPagas"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL IMPORTAR -->
+<div class="modal-overlay" id="modalImportar">
+  <div class="modal">
+    <h2>📤 Importar Dados</h2>
+    <p class="modal-desc">Aceita até <strong>12 arquivos</strong> por vez · Formatos: CSV, PDF, JSON, TXT</p>
+
+    <div class="import-tabs">
+      <button class="import-tab active" data-import="pedidos" data-tipo="pedidos">📋 Pedidos</button>
+      <button class="import-tab" data-import="comissoes" data-tipo="comissoes">💰 Comissões</button>
+    </div>
+
+    <div class="import-pane active" id="pane-pedidos">
+      <div class="drop-zone" id="dropPedidos">
+        <div class="drop-zone-icon">📁</div>
+        <div class="drop-zone-text">Clique ou arraste até 12 arquivos aqui</div>
+        <div class="drop-zone-hint">Formatos aceitos: .csv, .json, .txt, .pdf</div>
+      </div>
+      <input type="file" id="filePedidos" accept=".csv,.json,.txt,.pdf" multiple style="display:none">
+      <div class="form-group">
+        <label>Ou cole o conteúdo (CSV / JSON / texto)</label>
+        <textarea id="textoPedidos" placeholder="cod;hospital;regiao;valor;situacao;tipo&#10;47;HOSPITAL X;19;100000;Fechado;VENDA&#10;47-S;HOSPITAL X;19;5000;Fechado;SERVICO"></textarea>
+      </div>
+    </div>
+
+    <div class="import-pane" id="pane-comissoes">
+      <div class="drop-zone" id="dropComissoes">
+        <div class="drop-zone-icon">📁</div>
+        <div class="drop-zone-text">Clique ou arraste até 12 arquivos aqui</div>
+        <div class="drop-zone-hint">Formatos aceitos: .csv, .json, .txt, .pdf</div>
+      </div>
+      <input type="file" id="fileComissoes" accept=".csv,.json,.txt,.pdf" multiple style="display:none">
+      <div class="form-group">
+        <label>Ou cole o texto do PDF (Informe de Comissão)</label>
+        <textarea id="textoComissoes" placeholder="DEV-037/26a Cicero 87.484,59 10,00% 8.748,46"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Data do Informe (extraída automaticamente do PDF, se disponível)</label>
+        <input type="date" id="dataInformeInput" value="2026-09-09">
+      </div>
+      <div class="preview-info" style="margin-top:0;">
+        ℹ️ Duplicatas são detectadas por <strong>DEV + Dt Emissão</strong>. O mesmo DEV com datas diferentes é permitido (parcelas).
+      </div>
+    </div>
+
+    <div id="listaArquivos"></div>
+    <div class="progress-geral" id="progressGeral" style="display:none;">
+      <div class="progress-geral-fill" id="progressGeralFill"></div>
+    </div>
+
+    <div id="previewImport"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="App.fecharModalImportar()">Cancelar</button>
+      <button class="btn btn-success" onclick="App.processarImportacao()">🔍 Processar texto</button>
+      <button class="btn btn-primary" onclick="App.confirmarImportacao()">✓ Confirmar Importação</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const MAX_ARQUIVOS = 12;
+
+  const state = {
+    dataInforme: '2026-09-09',
+    dataReferencia: '2026-09-12',
+    importTipo: 'pedidos',
+    importPreview: null,
+    arquivosSelecionados: [],
+    importIgnoradas: [],
+    filtroPedidos: 'todos',
+    filtroDtDe: '',
+    filtroDtAte: '',
+    agruparPorDev: false,
+    gruposExpandidos: new Set(),
+    charts: { regiao: null, composicao: null },
+    pedidosExpandidos: new Set(),
+    inicializado: false
+  };
+
+  const DB = {
+    metas: { DDD19: 3300000, DDD14_15: 2700000 },
+    pedidos: [
+      { cod: '45',    hospital: 'UNIMED JAHU',                 regiao: '14', valor: 113000,  situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '45A',   hospital: 'UNIMED JAHU',                 regiao: '14', valor: 17500,   situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '46',    hospital: 'SANTA CASA DE ITAPEVA',       regiao: '15', valor: 311400,  situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '46-S',  hospital: 'SANTA CASA DE ITAPEVA',       regiao: '15', valor: 42600,   situacao: 'Fechado', tipo: 'SERVICO' },
+      { cod: '37',    hospital: 'PREFEITURA DE VARZEA PAULISTA', regiao: '19', valor: 4165000, situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '2',     hospital: 'CPFL',                        regiao: '19', valor: 350750,  situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '5',     hospital: 'FAMESP',                      regiao: '14', valor: 80000,   situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '34',    hospital: 'KIMENS',                      regiao: '11', valor: 25600,   situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '29',    hospital: 'BOLDRINI',                    regiao: '19', valor: 315000,  situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '22',    hospital: 'SANTA CASA DE ITAPEVA',       regiao: '15', valor: 289850,  situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '22-S',  hospital: 'SANTA CASA DE ITAPEVA',       regiao: '15', valor: 12000,   situacao: 'Fechado', tipo: 'SERVICO' },
+      { cod: '23',    hospital: 'PUC CAMPINAS',                regiao: '19', valor: 515600,  situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: '13',    hospital: 'TABAJARA RAMOS',              regiao: '19', valor: 311580,  situacao: 'Fechado', tipo: 'VENDA' },
+      { cod: 'S/N-1', hospital: 'AVARE',                       regiao: '14', valor: 600000,  situacao: 'Em andamento', tipo: 'VENDA' },
+      { cod: 'S/N-2', hospital: 'CHS',                         regiao: '15', valor: 1300000, situacao: 'Em andamento', tipo: 'VENDA' }
+    ],
+    comissoes: [
+      { dev: 'DEV-037/26a', numPedido: '242393', cliente: 'PREFEITURA DE VARZEA PAULISTA', dataInforme: '2026-09-09', dtEmissao: '2026-06-12', base: 87484.59, percentual: 10, comissao: 8748.46, pago: false, dataPagamento: null },
+      { dev: 'DEV-037/26b', numPedido: '242393', cliente: 'PREFEITURA DE VARZEA PAULISTA', dataInforme: '2026-09-09', dtEmissao: '2026-06-12', base: 47107.09, percentual: 10, comissao: 4710.71, pago: false, dataPagamento: null },
+      { dev: 'DEV-045/26a', numPedido: '243672', cliente: 'UNIMED REGIONAL JAHU',           dataInforme: '2026-09-09', dtEmissao: '2026-07-13', base: 1076.02,  percentual: 10, comissao: 107.60, pago: false, dataPagamento: null },
+      { dev: 'DEV-045/26b', numPedido: '243672', cliente: 'UNIMED REGIONAL JAHU',           dataInforme: '2026-09-09', dtEmissao: '2026-07-13', base: 579.40,   percentual: 10, comissao: 57.94,  pago: false, dataPagamento: null },
+      { dev: 'DEV-0454A/26', numPedido: '243666', cliente: 'UNIMED REGIONAL JAHU',          dataInforme: '2026-09-09', dtEmissao: '2026-06-12', base: 125.19,   percentual: 10, comissao: 12.52,  pago: false, dataPagamento: null },
+      { dev: 'DEV-0454A/26', numPedido: '243666', cliente: 'UNIMED REGIONAL JAHU',          dataInforme: '2026-09-09', dtEmissao: '2026-07-24', base: 232.49,   percentual: 10, comissao: 23.25,  pago: false, dataPagamento: null },
+      { dev: 'DEV-022/26a', numPedido: '239408', cliente: 'SANTA CASA DE MISERICÓRDIA',     dataInforme: '2026-09-09', dtEmissao: '2026-04-27', base: 740.91,   percentual: 10, comissao: 74.09,  pago: false, dataPagamento: null },
+      { dev: 'DEV-022/26b', numPedido: '239408', cliente: 'SANTA CASA DE MISERICÓRDIA',     dataInforme: '2026-09-09', dtEmissao: '2026-04-27', base: 398.95,   percentual: 10, comissao: 39.90,  pago: false, dataPagamento: null }
+    ]
+  };
+
+  const U = {
+    formatBRL: (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+    formatPct: (v) => (Number(v) || 0).toFixed(1) + '%',
+    parseDate: (iso) => {
+      if (!iso) return new Date();
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, (m - 1), d);
+    },
+    formatDate: (d) => d.toLocaleDateString('pt-BR'),
+    parseDateBRtoISO(str) {
+      if (!str) return null;
+      const limpo = String(str).trim();
+      const m = limpo.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!m) return null;
+      return `${m[3]}-${m[2]}-${m[1]}`;
+    },
+    getRegiaoLabel: (ddd) => {
+      if (ddd === '19') return 'DDD 19';
+      if (ddd === '14' || ddd === '15') return 'DDD 14/15';
+      return 'Outros';
+    },
+    parseValorBR: (str) => {
+      if (typeof str === 'number') return str;
+      if (!str) return 0;
+      let s = String(str).trim()
+        .replace(/R\$\s?/g, '')
+        .replace(/[£;:]/g, '')
+        .replace(/\./g, '')
+        .replace(',', '.');
+      return parseFloat(s) || 0;
+    },
+    calcularPrevisao: (iso) => {
+      const d = U.parseDate(iso);
+      return new Date(d.getFullYear(), d.getMonth() + 1, 5);
+    },
+    hoje: () => {
+      const ref = document.getElementById('dataReferencia')?.value || state.dataReferencia;
+      const [y, m, d] = ref.split('-').map(Number);
+      return new Date(y, (m - 1), d);
+    },
+    isVencida: (previsao) => previsao < U.hoje(),
+    isProxima: (previsao) => {
+      const diff = (previsao - U.hoje()) / 86400000;
+      return diff >= 0 && diff <= 7;
+    },
+    statusComissao: (c) => {
+      const previsao = U.calcularPrevisao(c.dataInforme);
+      if (c.pago) return 'paga';
+      if (U.isVencida(previsao)) return 'vencida';
+      if (U.isProxima(previsao)) return 'proxima';
+      return 'a_vencer';
+    },
+    // ✅ Filtro por Dt Emissão
+    estaNoFiltroData(iso) {
+      if (!iso) return !state.filtroDtDe && !state.filtroDtAte;
+      if (state.filtroDtDe && iso < state.filtroDtDe) return false;
+      if (state.filtroDtAte && iso > state.filtroDtAte) return false;
+      return true;
+    },
+    formatarPercentualEfetivo(pct, statusPedido, tipoPedido) {
+      if (tipoPedido === 'SERVICO') {
+        return { texto: '—', cor: '' };
+      }
+      if (statusPedido === 'aguardando_comissao') {
+        return { texto: 'aguardando', cor: 'text-warning' };
+      }
+      if (!pct || pct === 0) {
+        return { texto: '0%', cor: 'text-danger' };
+      }
+      let texto;
+      if (pct >= 1) {
+        texto = pct.toFixed(2).replace(/\.?0+$/, '').replace('.', ',') + '%';
+      } else {
+        texto = pct.toFixed(4).replace(/0+$/, '').replace(/\.$/, '').replace('.', ',') + '%';
+      }
+      let cor;
+      if (pct >= 10) cor = 'text-success';
+      else if (pct >= 1) cor = 'text-warning';
+      else cor = 'text-danger';
+      return { texto, cor };
+    }
+  };
+
+  // =========================================================
+  // DETECÇÃO E VINCULAÇÃO DE TIPO
+  // =========================================================
+  function detectarTipoPedido(codigo) {
+    const cod = String(codigo || '').toUpperCase();
+    if (/[-_](S|SERV|SERVICO|SRV)(\/|$)/.test(cod)) return 'SERVICO';
+    if (/[-_](S|SERV|SERVICO|SRV)$/.test(cod)) return 'SERVICO';
+    return 'VENDA';
+  }
+
+  function extrairNumeroBase(codigo) {
+    if (!codigo) return null;
+    const limpo = String(codigo).replace(/[-_](S|SERV|SERVICO|SRV)(\/|$)/i, '$2');
+    const match = limpo.match(/(\d+)/);
+    return match ? match[1].replace(/^0+/, '') || '0' : null;
+  }
+
+  function vincularPedidoComissoes(pedido) {
+    const numPedido = extrairNumeroBase(pedido.cod);
+    if (!numPedido) return [];
+    
+    const tipoPedido = pedido.tipo || detectarTipoPedido(pedido.cod);
+    
+    return DB.comissoes.filter(c => {
+      const tipoComissao = detectarTipoPedido(c.dev);
+      
+      if (c.numPedido && pedido.cod && c.numPedido === pedido.cod) {
+        return tipoComissao === tipoPedido;
+      }
+      
+      const numDev = extrairNumeroBase(c.dev);
+      if (numDev !== numPedido) return false;
+      
+      return tipoComissao === tipoPedido;
+    });
+  }
+
+  function statusPagamentoPedido(pedido) {
+    const comissoes = vincularPedidoComissoes(pedido);
+    const tipo = pedido.tipo || detectarTipoPedido(pedido.cod);
+    
+    if (tipo === 'SERVICO') {
+      const temComissao = comissoes.length > 0;
+      const totalBase = comissoes.reduce((a, c) => a + (Number(c.base) || 0), 0);
+      const totalPago = comissoes.filter(c => c.pago).reduce((a, c) => a + (Number(c.comissao) || 0), 0);
+      return {
+        status: temComissao ? 'servico_com_comissao' : 'servico_sem_comissao',
+        label: temComissao ? '🔧 Serviço c/ comissão' : '🔧 Serviço (s/ comissão)',
+        badge: 'badge-cyan',
+        comissoes, totalBase, totalPago,
+        totalComissao: comissoes.reduce((a, c) => a + (Number(c.comissao) || 0), 0),
+        percentualEfetivo: pedido.valor > 0 ? (totalPago / pedido.valor) * 100 : 0,
+        tipo
+      };
+    }
+    
+    if (comissoes.length === 0) {
+      return {
+        status: 'aguardando_comissao',
+        label: '⏸️ Aguardando comissão',
+        badge: 'badge-warning',
+        comissoes: [], totalBase: 0, totalComissao: 0, totalPago: 0,
+        percentualEfetivo: 0, tipo
+      };
+    }
+    
+    const pagas = comissoes.filter(c => c.pago);
+    const totalBase = comissoes.reduce((a, c) => a + (Number(c.base) || 0), 0);
+    const totalComissao = comissoes.reduce((a, c) => a + (Number(c.comissao) || 0), 0);
+    const totalPago = pagas.reduce((a, c) => a + (Number(c.comissao) || 0), 0);
+    const percentualEfetivo = pedido.valor > 0 ? (totalPago / pedido.valor) * 100 : 0;
+    
+    if (pagas.length === comissoes.length) {
+      return {
+        status: 'pago', label: '✅ Pago', badge: 'badge-success',
+        comissoes, totalBase, totalComissao, totalPago, percentualEfetivo, tipo
+      };
+    }
+    
+    if (pagas.length > 0) {
+      return {
+        status: 'parcial', label: `⏳ Parcial ${pagas.length}/${comissoes.length}`,
+        badge: 'badge-warning',
+        comissoes, totalBase, totalComissao, totalPago, percentualEfetivo, tipo
+      };
+    }
+    
+    return {
+      status: 'pendente', label: `⏸️ Pendente 0/${comissoes.length}`,
+      badge: 'badge-info',
+      comissoes, totalBase, totalComissao, totalPago, percentualEfetivo, tipo
+    };
+  }
+
+  // =========================================================
+  // FILTRO DE DUPLICATAS — DEV + DT EMISSÃO
+  // =========================================================
+  function chaveDuplicata(c) {
+    const dev = String(c.dev || '').trim().toUpperCase();
+    const dt = c.dtEmissao || 'SEM_DATA';
+    return `${dev}|${dt}`;
+  }
+
+  function filtrarComissoesDuplicadas(novasComissoes) {
+    const chavesExistentes = new Set(DB.comissoes.map(chaveDuplicata));
+    const chavesNoLote = new Set();
+    const unicas = [];
+    const ignoradas = [];
+    
+    novasComissoes.forEach(c => {
+      const dev = String(c.dev || '').trim().toUpperCase();
+      const dt = c.dtEmissao || '';
+      
+      if (!dev) {
+        ignoradas.push({ dev: c.dev || '(vazio)', dtEmissao: dt, motivo: 'DEV vazio' });
+        return;
+      }
+      
+      const chave = chaveDuplicata(c);
+      
+      if (chavesExistentes.has(chave)) {
+        ignoradas.push({
+          dev: c.dev,
+          dtEmissao: dt,
+          motivo: dt ? 'Já cadastrado (mesmo DEV + Dt Emissão)' : 'Já cadastrado (DEV sem data)'
+        });
+        return;
+      }
+      
+      if (chavesNoLote.has(chave)) {
+        ignoradas.push({
+          dev: c.dev,
+          dtEmissao: dt,
+          motivo: 'Duplicado no arquivo (mesmo DEV + Dt Emissão)'
+        });
+        return;
+      }
+      
+      chavesNoLote.add(chave);
+      unicas.push(c);
+    });
+    
+    return { unicas, ignoradas };
+  }
+
+  function isDevDuplicado(dev, dtEmissao, idxAtual) {
+    const devNorm = String(dev || '').trim().toUpperCase();
+    if (!devNorm) return false;
+    
+    const dtNorm = dtEmissao || 'SEM_DATA';
+    const chaveAtual = `${devNorm}|${dtNorm}`;
+    
+    const existeNoBanco = DB.comissoes.some(c => {
+      const cDev = String(c.dev).trim().toUpperCase();
+      const cDt = c.dtEmissao || 'SEM_DATA';
+      return `${cDev}|${cDt}` === chaveAtual;
+    });
+    if (existeNoBanco) return true;
+    
+    if (state.importPreview?.tipo === 'comissoes') {
+      const dados = state.importPreview.dados;
+      for (let i = 0; i < dados.length; i++) {
+        if (i === idxAtual) continue;
+        const dDev = String(dados[i].dev).trim().toUpperCase();
+        const dDt = dados[i].dtEmissao || 'SEM_DATA';
+        if (`${dDev}|${dDt}` === chaveAtual) return true;
+      }
+    }
+    
+    return false;
+  }
+
+  // =========================================================
+  // CÁLCULOS
+  // =========================================================
+  function calcularVendasPorRegiao() {
+    const r = { DDD19: 0, DDD14_15: 0, OUTROS: 0 };
+    DB.pedidos.filter(p => (p.tipo || detectarTipoPedido(p.cod)) === 'VENDA').forEach(p => {
+      if (p.regiao === '19') r.DDD19 += p.valor;
+      else if (p.regiao === '14' || p.regiao === '15') r.DDD14_15 += p.valor;
+      else r.OUTROS += p.valor;
+    });
+    return r;
+  }
+
+  function calcularTotaisPorTipo() {
+    let vendasTotal = 0, vendasCount = 0;
+    let servicosTotal = 0, servicosCount = 0;
+    DB.pedidos.forEach(p => {
+      const tipo = p.tipo || detectarTipoPedido(p.cod);
+      if (tipo === 'SERVICO') {
+        servicosTotal += p.valor;
+        servicosCount++;
+      } else {
+        vendasTotal += p.valor;
+        vendasCount++;
+      }
+    });
+    return { vendasTotal, vendasCount, servicosTotal, servicosCount };
+  }
+
+  const totalVendido = () => DB.pedidos.reduce((a, p) => a + (Number(p.valor) || 0), 0);
+  const comissoesAReceber = () => DB.comissoes.filter(c => !c.pago);
+  const totalAReceber = () => comissoesAReceber().reduce((a, c) => a + (Number(c.comissao) || 0), 0);
+  const comissoesPagas = () => DB.comissoes.filter(c => c.pago);
+  const totalPagas = () => comissoesPagas().reduce((a, c) => a + (Number(c.comissao) || 0), 0);
+
+  // =========================================================
+  // RENDER: DASHBOARD
+  // =========================================================
+  function renderKPIs() {
+    const vendas = calcularVendasPorRegiao();
+    const totais = calcularTotaisPorTipo();
+    const metaTotal = DB.metas.DDD19 + DB.metas.DDD14_15;
+    const pctGeral = metaTotal ? (totais.vendasTotal / metaTotal) * 100 : 0;
+    const pct19 = DB.metas.DDD19 ? (vendas.DDD19 / DB.metas.DDD19) * 100 : 0;
+    const pct14 = DB.metas.DDD14_15 ? (vendas.DDD14_15 / DB.metas.DDD14_15) * 100 : 0;
+    const cor = (p) => p >= 80 ? 'success' : p >= 50 ? 'warning' : 'danger';
+
+    const kpis = [
+      { label: 'Meta Total', value: U.formatBRL(metaTotal), sub: 'DDD19 + DDD14/15', cor: 'primary' },
+      { label: 'Vendas Realizadas', value: U.formatBRL(totais.vendasTotal), sub: U.formatPct(pctGeral) + ' da meta · ' + totais.vendasCount + ' pedido(s)', cor: cor(pctGeral), progress: Math.min(pctGeral, 100) },
+      { label: 'Vendas DDD 19', value: U.formatBRL(vendas.DDD19), sub: U.formatPct(pct19) + ' da meta', cor: cor(pct19), progress: Math.min(pct19, 100) },
+      { label: 'Vendas DDD 14/15', value: U.formatBRL(vendas.DDD14_15), sub: U.formatPct(pct14) + ' da meta', cor: cor(pct14), progress: Math.min(pct14, 100) },
+      { label: 'Serviços (à parte)', value: U.formatBRL(totais.servicosTotal), sub: totais.servicosCount + ' serviço(s) · sem comissão', cor: 'servico' }
+    ];
+
+    document.getElementById('kpiGrid').innerHTML = kpis.map(k => `
+      <div class="kpi-card ${k.cor}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-sub">${k.sub}</div>
+        ${k.progress !== undefined ? `<div class="progress-bar"><div class="progress-fill ${k.cor}" style="width:${k.progress}%"></div></div>` : ''}
+      </div>
+    `).join('');
+
+    document.getElementById('dashComissoesReceber').textContent = U.formatBRL(totalAReceber());
+    document.getElementById('dashComissoesReceberQtd').textContent = comissoesAReceber().length + ' lançamento(s) pendente(s)';
+    document.getElementById('dashComissoesPagas').textContent = U.formatBRL(totalPagas());
+    document.getElementById('dashComissoesPagasQtd').textContent = comissoesPagas().length + ' lançamento(s) recebido(s)';
+  }
+
+  function renderAlertas() {
+    const vendas = calcularVendasPorRegiao();
+    const alertas = [];
+    const pct19 = DB.metas.DDD19 ? (vendas.DDD19 / DB.metas.DDD19) * 100 : 0;
+    const pct14 = DB.metas.DDD14_15 ? (vendas.DDD14_15 / DB.metas.DDD14_15) * 100 : 0;
+
+    if (pct19 < 50) alertas.push({ tipo: 'warning', msg: `⚠️ DDD 19 está com apenas ${U.formatPct(pct19)} da meta atingida` });
+    if (pct14 < 50) alertas.push({ tipo: 'warning', msg: `⚠️ DDD 14/15 está com apenas ${U.formatPct(pct14)} da meta atingida` });
+
+    const vencidas = comissoesAReceber().filter(c => U.isVencida(U.calcularPrevisao(c.dataInforme)));
+    if (vencidas.length) alertas.push({ tipo: 'danger', msg: `🔴 ${vencidas.length} comissão(ões) vencida(s) e ainda NÃO paga(s)` });
+
+    const proximas = comissoesAReceber().filter(c => U.isProxima(U.calcularPrevisao(c.dataInforme)));
+    if (proximas.length) alertas.push({ tipo: 'info', msg: `ℹ️ ${proximas.length} comissão(ões) com pagamento nos próximos 7 dias` });
+
+    const pagasCount = comissoesPagas().length;
+    if (pagasCount) alertas.push({ tipo: 'success', msg: `✅ ${pagasCount} comissão(ões) já recebida(s) — total ${U.formatBRL(totalPagas())}` });
+
+    document.getElementById('alertas').innerHTML = alertas.map(a => `<div class="alert alert-${a.tipo}">${a.msg}</div>`).join('');
+  }
+
+  // =========================================================
+  // RENDER: PEDIDOS
+  // =========================================================
+  function renderPedidosKPIs() {
+    const grid = document.getElementById('pedidosKpiGrid');
+    if (!grid) return;
+    
+    let pagos = 0, parciais = 0, aguardando = 0, pendentes = 0;
+    let servicosTotal = 0, servicosValor = 0;
+    let valorPago = 0, valorAguardando = 0, valorPendenteComissao = 0;
+    
+    DB.pedidos.forEach(p => {
+      const pag = statusPagamentoPedido(p);
+      
+      if (pag.tipo === 'SERVICO') {
+        servicosTotal++;
+        servicosValor += p.valor;
+        return;
+      }
+      
+      if (pag.status === 'pago') { 
+        pagos++; 
+        valorPago += pag.totalPago; 
+      }
+      else if (pag.status === 'parcial') { 
+        parciais++; 
+        valorPago += pag.totalPago; 
+        valorPendenteComissao += (pag.totalComissao - pag.totalPago);
+      }
+      else if (pag.status === 'aguardando_comissao') {
+        aguardando++;
+        valorAguardando += p.valor;
+      }
+      else if (pag.status === 'pendente') {
+        pendentes++;
+        valorPendenteComissao += pag.totalComissao;
+      }
+    });
+    
+    grid.innerHTML = `
+      <div class="kpi-card success">
+        <div class="kpi-label">✅ Vendas Pagas</div>
+        <div class="kpi-value">${pagos}</div>
+        <div class="kpi-sub">Comissões: ${U.formatBRL(valorPago)}</div>
+      </div>
+      <div class="kpi-card warning">
+        <div class="kpi-label">⏳ Vendas Parciais</div>
+        <div class="kpi-value">${parciais}</div>
+        <div class="kpi-sub">Ainda recebendo: ${U.formatBRL(valorPendenteComissao)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">⏸️ Aguardando Comissão</div>
+        <div class="kpi-value">${aguardando}</div>
+        <div class="kpi-sub">Vendas: ${U.formatBRL(valorAguardando)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">⏸️ Pendentes</div>
+        <div class="kpi-value">${pendentes}</div>
+        <div class="kpi-sub">Comissão: ${U.formatBRL(valorPendenteComissao)}</div>
+      </div>
+      <div class="kpi-card servico">
+        <div class="kpi-label">🔧 Serviços</div>
+        <div class="kpi-value">${servicosTotal}</div>
+        <div class="kpi-sub">${U.formatBRL(servicosValor)}</div>
+      </div>
+    `;
+  }
+
+  function getPedidosFiltrados() {
+    if (state.filtroPedidos === 'todos') return DB.pedidos.map((p, i) => ({ ...p, _idx: i }));
+    return DB.pedidos
+      .map((p, i) => ({ ...p, _idx: i }))
+      .filter(p => (p.tipo || detectarTipoPedido(p.cod)) === state.filtroPedidos);
+  }
+
+  function renderTabelaPedidos() {
+    const tbody = document.getElementById('tabelaPedidos');
+    const pedidos = getPedidosFiltrados();
+    
+    const titulos = {
+      todos: 'Todos os Pedidos',
+      VENDA: '💰 Vendas',
+      SERVICO: '🔧 Serviços'
+    };
+    document.getElementById('tituloTabelaPedidos').textContent = titulos[state.filtroPedidos];
+    document.getElementById('totalPedidos').textContent = pedidos.length + ' pedido(s)';
+    const valorFiltrado = pedidos.reduce((a, p) => a + p.valor, 0);
+    document.getElementById('valorTotalPedidos').textContent = U.formatBRL(valorFiltrado);
+    
+    if (!pedidos.length) {
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nenhum pedido neste filtro</td></tr>`;
+      return;
+    }
+    
+    let html = '';
+    pedidos.forEach((p) => {
+      const pag = statusPagamentoPedido(p);
+      const tipo = p.tipo || detectarTipoPedido(p.cod);
+      const expandido = state.pedidosExpandidos.has(p._idx);
+      const detalheId = `detalhe-${p._idx}`;
+      
+      const tipoBadge = tipo === 'SERVICO'
+        ? '<span class="badge badge-servico">🔧 SERV.</span>'
+        : '<span class="badge badge-venda">💰 VENDA</span>';
+      
+      let valorBaseFmt = '—';
+      let valorBaseCor = '';
+      if (tipo === 'VENDA') {
+        if (pag.totalBase > 0) {
+          valorBaseFmt = U.formatBRL(pag.totalBase);
+          valorBaseCor = 'text-success';
+        } else {
+          valorBaseFmt = 'aguardando';
+          valorBaseCor = 'text-warning';
+        }
+      }
+      
+      const pctInfo = U.formatarPercentualEfetivo(pag.percentualEfetivo, pag.status, tipo);
+      
+      html += `
+        <tr>
+          <td class="font-mono">${p.cod}</td>
+          <td>${tipoBadge}</td>
+          <td>${p.hospital}</td>
+          <td><span class="badge badge-info">${U.getRegiaoLabel(p.regiao)}</span></td>
+          <td class="text-right font-mono">${U.formatBRL(p.valor)}</td>
+          <td class="text-right font-mono ${valorBaseCor}">${valorBaseFmt}</td>
+          <td class="text-center">
+            ${pag.comissoes.length > 0 ? `
+              <button class="btn-toggle-detalhes" data-toggle-detalhe="${p._idx}">
+                ${pag.comissoes.length} ${expandido ? '▲' : '▼'}
+              </button>
+            ` : '<span class="badge badge-gray">0</span>'}
+          </td>
+          <td class="text-right font-mono ${pag.totalPago > 0 ? 'text-success' : ''}">
+            ${pag.totalPago > 0 ? U.formatBRL(pag.totalPago) : '—'}
+          </td>
+          <td class="text-center font-mono ${pctInfo.cor}">
+            <strong>${pctInfo.texto}</strong>
+          </td>
+          <td class="text-center"><span class="badge ${pag.badge}">${pag.label}</span></td>
+          <td class="text-center">
+            <button class="btn btn-outline btn-sm" data-remove-pedido="${p._idx}">🗑️</button>
+          </td>
+        </tr>
+      `;
+      
+      if (expandido && pag.comissoes.length > 0) {
+        html += `
+          <tr class="detalhe-row" id="${detalheId}">
+            <td colspan="11">
+              <strong>Comissões vinculadas a este pedido (${pag.comissoes.length}):</strong>
+              <ul class="detalhe-comissoes">
+                ${pag.comissoes.map(c => `
+                  <li>
+                    <span class="badge badge-gray">${c.dev}</span>
+                    ${c.dtEmissao ? `<span class="font-mono">Dt Emissão: ${U.formatDate(U.parseDate(c.dtEmissao))}</span>` : ''}
+                    <span><strong>${c.cliente}</strong></span>
+                    <span class="font-mono">Nº Pedido: ${c.numPedido || '—'}</span>
+                    <span class="font-mono">Base: ${U.formatBRL(c.base)}</span>
+                    <span class="font-mono">${c.percentual}%</span>
+                    <span class="font-mono ${c.pago ? 'text-success' : 'text-warning'}">
+                      Comissão: ${U.formatBRL(c.comissao)} ${c.pago ? '✅ Paga' : '⏳ Pendente'}
+                    </span>
+                    ${c.pago && c.dataPagamento ? `<span class="font-mono">Pago em ${U.formatDate(U.parseDate(c.dataPagamento))}</span>` : ''}
+                  </li>
+                `).join('')}
+              </ul>
+              <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--gray-200);display:flex;gap:20px;flex-wrap:wrap;">
+                <span><strong>Base Total:</strong> ${U.formatBRL(pag.totalBase)}</span>
+                <span><strong>Comissão Total:</strong> ${U.formatBRL(pag.totalComissao)}</span>
+                <span class="text-success"><strong>Pago:</strong> ${U.formatBRL(pag.totalPago)}</span>
+                <span class="text-warning"><strong>A receber:</strong> ${U.formatBRL(pag.totalComissao - pag.totalPago)}</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+    });
+    tbody.innerHTML = html;
+  }
+
+  // =========================================================
+  // RENDER: COMISSÕES (com filtro + agrupamento)
+  // =========================================================
+  function getComissoesFiltradas() {
+    return comissoesAReceber().filter(c => U.estaNoFiltroData(c.dtEmissao));
+  }
+
+  function getComissoesPagasFiltradas() {
+    return comissoesPagas().filter(c => U.estaNoFiltroData(c.dtEmissao));
+  }
+
+  function atualizarInfoFiltro(elId) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const temFiltro = state.filtroDtDe || state.filtroDtAte;
+    if (temFiltro) {
+      el.style.display = 'inline-block';
+      const de = state.filtroDtDe ? U.formatDate(U.parseDate(state.filtroDtDe)) : '...';
+      const ate = state.filtroDtAte ? U.formatDate(U.parseDate(state.filtroDtAte)) : '...';
+      el.textContent = `Filtro: ${de} → ${ate}`;
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function renderTabelaComissoes() {
+    const pendentes = getComissoesFiltradas().sort((a, b) =>
+      U.calcularPrevisao(a.dataInforme) - U.calcularPrevisao(b.dataInforme)
+    );
+    const tbody = document.getElementById('tabelaComissoes');
+
+    atualizarInfoFiltro('infoFiltro');
+
+    if (!pendentes.length) {
+      const temFiltro = state.filtroDtDe || state.filtroDtAte;
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-state">Nenhuma comissão a receber${temFiltro ? ' neste filtro' : ''}</td></tr>`;
+    } else if (state.agruparPorDev) {
+      tbody.innerHTML = renderComissoesAgrupadas(pendentes, false);
+    } else {
+      tbody.innerHTML = renderComissoesLinha(pendentes, false);
+    }
+
+    document.getElementById('totalComissoes').textContent = 'A Receber: ' + U.formatBRL(
+      pendentes.reduce((a, c) => a + (Number(c.comissao) || 0), 0)
+    );
+    
+    const vencidas = pendentes.filter(c => U.isVencida(U.calcularPrevisao(c.dataInforme)));
+    const el = document.getElementById('comissoesVencidas');
+    if (vencidas.length) { el.style.display = 'inline-block'; el.textContent = `${vencidas.length} vencida(s)`; }
+    else { el.style.display = 'none'; }
+  }
+
+  function renderTabelaComissoesPagas() {
+    const pagas = getComissoesPagasFiltradas();
+    const tbody = document.getElementById('tabelaComissoesPagas');
+
+    atualizarInfoFiltro('infoFiltroPagas');
+
+    if (!pagas.length) {
+      const temFiltro = state.filtroDtDe || state.filtroDtAte;
+      tbody.innerHTML = `<tr><td colspan="10" class="empty-state">Nenhuma comissão recebida${temFiltro ? ' neste filtro' : ''}</td></tr>`;
+    } else if (state.agruparPorDev) {
+      tbody.innerHTML = renderComissoesAgrupadas(pagas, true);
+    } else {
+      tbody.innerHTML = renderComissoesLinha(pagas, true);
+    }
+
+    document.getElementById('totalComissoesPagas').textContent = 'Total Recebido: ' + U.formatBRL(
+      pagas.reduce((a, c) => a + (Number(c.comissao) || 0), 0)
+    );
+  }
+
+  // ✅ Renderização linha a linha (modo normal)
+  function renderComissoesLinha(lista, ehPaga) {
+    return lista.map(c => {
+      const previsao = U.calcularPrevisao(c.dataInforme);
+      const status = U.statusComissao(c);
+      let statusBadge = '<span class="badge badge-info">A vencer</span>';
+      let rowStyle = '';
+      if (!ehPaga) {
+        if (status === 'vencida') { statusBadge = '<span class="badge badge-danger">⚠️ Vencida</span>'; rowStyle = 'background:#fef2f2;'; }
+        else if (status === 'proxima') { statusBadge = '<span class="badge badge-warning">⏰ Próxima</span>'; rowStyle = 'background:#fffbeb;'; }
+      }
+      const idx = DB.comissoes.indexOf(c);
+      
+      if (ehPaga) {
+        return `
+          <tr style="background:#f0fdf4;">
+            <td class="font-mono">${c.dev}</td>
+            <td class="font-mono">${c.dtEmissao ? U.formatDate(U.parseDate(c.dtEmissao)) : '—'}</td>
+            <td class="font-mono"><span class="badge badge-gray">${c.numPedido || '—'}</span></td>
+            <td>${c.cliente}</td>
+            <td class="font-mono">${U.formatDate(U.parseDate(c.dataInforme))}</td>
+            <td class="font-mono text-success"><strong>${c.dataPagamento ? U.formatDate(U.parseDate(c.dataPagamento)) : '—'}</strong></td>
+            <td class="text-right font-mono">${U.formatBRL(c.base)}</td>
+            <td class="text-right font-mono">${c.percentual}%</td>
+            <td class="text-right font-mono text-success"><strong>${U.formatBRL(c.comissao)}</strong></td>
+            <td class="text-center"><button class="btn btn-outline btn-sm" data-marcar-pendente="${idx}">↩️ Desfazer</button></td>
+          </tr>
+        `;
+      } else {
+        return `
+          <tr style="${rowStyle}">
+            <td class="font-mono">${c.dev}</td>
+            <td class="font-mono">${c.dtEmissao ? U.formatDate(U.parseDate(c.dtEmissao)) : '—'}</td>
+            <td class="font-mono"><span class="badge badge-gray">${c.numPedido || '—'}</span></td>
+            <td>${c.cliente}</td>
+            <td class="font-mono">${U.formatDate(U.parseDate(c.dataInforme))}</td>
+            <td class="font-mono"><strong>${U.formatDate(previsao)}</strong></td>
+            <td class="text-right font-mono">${U.formatBRL(c.base)}</td>
+            <td class="text-right font-mono">${c.percentual}%</td>
+            <td class="text-right font-mono text-success">${U.formatBRL(c.comissao)}</td>
+            <td class="text-center"><input type="checkbox" class="chk-pago" data-marcar-pago="${idx}"></td>
+            <td class="text-center">${statusBadge}</td>
+          </tr>
+        `;
+      }
+    }).join('');
+  }
+
+  // ✅ Renderização agrupada por DEV
+  function renderComissoesAgrupadas(lista, ehPaga) {
+    const grupos = {};
+    lista.forEach(c => {
+      const dev = String(c.dev).trim();
+      if (!grupos[dev]) grupos[dev] = [];
+      grupos[dev].push(c);
+    });
+    
+    const devsOrdenados = Object.keys(grupos).sort();
+    let html = '';
+    const totalColspan = ehPaga ? 10 : 11;
+    
+    devsOrdenados.forEach(dev => {
+      const parcelas = grupos[dev].sort((a, b) => {
+        if (a.dtEmissao && b.dtEmissao) return a.dtEmissao.localeCompare(b.dtEmissao);
+        if (a.dtEmissao) return -1;
+        if (b.dtEmissao) return 1;
+        return 0;
+      });
+      
+      const totalComissao = parcelas.reduce((a, c) => a + (Number(c.comissao) || 0), 0);
+      const totalBase = parcelas.reduce((a, c) => a + (Number(c.base) || 0), 0);
+      const cliente = parcelas[0].cliente || '';
+      const numPedido = parcelas[0].numPedido || '';
+      
+      const chaveGrupo = dev + '||' + (ehPaga ? 'pago' : 'pendente');
+      // Grupos expandidos por padrão; colapsados se estiverem no set
+      const estaColapsado = state.gruposExpandidos.has(chaveGrupo);
+      const estaAberto = !estaColapsado;
+      
+      html += `
+        <tr class="grupo-dev-row" data-grupo-dev="${dev}">
+          <td colspan="${totalColspan}">
+            <div class="grupo-dev-titulo">
+              <button class="btn-toggle-grupo" data-toggle-grupo="${dev}" data-grupo-pago="${ehPaga}">
+                ${estaAberto ? '▼' : '▶'}
+              </button>
+              <span class="badge badge-info font-mono">${dev}</span>
+              <span class="dev-info">${cliente}</span>
+              ${numPedido ? `<span class="dev-info">Nº ${numPedido}</span>` : ''}
+              <span class="dev-info">${parcelas.length} parcela(s) · Base: ${U.formatBRL(totalBase)}</span>
+              <span class="dev-total">Total: ${U.formatBRL(totalComissao)}</span>
+            </div>
+          </td>
+        </tr>
+      `;
+      
+      if (estaAberto) {
+        parcelas.forEach(c => {
+          const previsao = U.calcularPrevisao(c.dataInforme);
+          const status = U.statusComissao(c);
+          let statusBadge = '<span class="badge badge-info">A vencer</span>';
+          if (!ehPaga) {
+            if (status === 'vencida') statusBadge = '<span class="badge badge-danger">⚠️ Vencida</span>';
+            else if (status === 'proxima') statusBadge = '<span class="badge badge-warning">⏰ Próxima</span>';
+          }
+          const idx = DB.comissoes.indexOf(c);
+          
+          if (ehPaga) {
+            html += `
+              <tr class="sub-linha-dev" style="background:#f0fdf4;">
+                <td class="font-mono">${c.dev}</td>
+                <td class="font-mono">${c.dtEmissao ? U.formatDate(U.parseDate(c.dtEmissao)) : '—'}</td>
+                <td class="font-mono"><span class="badge badge-gray">${c.numPedido || '—'}</span></td>
+                <td>${c.cliente}</td>
+                <td class="font-mono">${U.formatDate(U.parseDate(c.dataInforme))}</td>
+                <td class="font-mono text-success"><strong>${c.dataPagamento ? U.formatDate(U.parseDate(c.dataPagamento)) : '—'}</strong></td>
+                <td class="text-right font-mono">${U.formatBRL(c.base)}</td>
+                <td class="text-right font-mono">${c.percentual}%</td>
+                <td class="text-right font-mono text-success"><strong>${U.formatBRL(c.comissao)}</strong></td>
+                <td class="text-center"><button class="btn btn-outline btn-sm" data-marcar-pendente="${idx}">↩️ Desfazer</button></td>
+              </tr>
+            `;
+          } else {
+            html += `
+              <tr class="sub-linha-dev">
+                <td class="font-mono">${c.dev}</td>
+                <td class="font-mono">${c.dtEmissao ? U.formatDate(U.parseDate(c.dtEmissao)) : '—'}</td>
+                <td class="font-mono"><span class="badge badge-gray">${c.numPedido || '—'}</span></td>
+                <td>${c.cliente}</td>
+                <td class="font-mono">${U.formatDate(U.parseDate(c.dataInforme))}</td>
+                <td class="font-mono"><strong>${U.formatDate(previsao)}</strong></td>
+                <td class="text-right font-mono">${U.formatBRL(c.base)}</td>
+                <td class="text-right font-mono">${c.percentual}%</td>
+                <td class="text-right font-mono text-success">${U.formatBRL(c.comissao)}</td>
+                <td class="text-center"><input type="checkbox" class="chk-pago" data-marcar-pago="${idx}"></td>
+                <td class="text-center">${statusBadge}</td>
+              </tr>
+            `;
+          }
+        });
+      }
+    });
+    
+    return html;
+  }
+
+  function renderGraficos() {
+    if (typeof Chart === 'undefined') return;
+    const v = calcularVendasPorRegiao();
+    const totais = calcularTotaisPorTipo();
+    
+    if (state.charts.regiao) { try { state.charts.regiao.destroy(); } catch(e){} }
+    const ctx1 = document.getElementById('chartRegiao');
+    if (ctx1) {
+      state.charts.regiao = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: ['DDD 19', 'DDD 14/15', 'Outros'],
+          datasets: [
+            { label: 'Vendido', data: [v.DDD19, v.DDD14_15, v.OUTROS], backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'], borderRadius: 6 },
+            { label: 'Meta',    data: [DB.metas.DDD19, DB.metas.DDD14_15, 0], backgroundColor: ['#dbeafe', '#d1fae5', '#fef3c7'], borderRadius: 6 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + U.formatBRL(ctx.raw) } } },
+          scales: { y: { ticks: { callback: (val) => 'R$ ' + (val/1000000).toFixed(1) + 'M' } } }
+        }
+      });
+    }
+    
+    if (state.charts.composicao) { try { state.charts.composicao.destroy(); } catch(e){} }
+    const ctx2 = document.getElementById('chartComposicao');
+    if (ctx2) {
+      state.charts.composicao = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['💰 Vendas', '🔧 Serviços'],
+          datasets: [{
+            data: [totais.vendasTotal, totais.servicosTotal],
+            backgroundColor: ['#10b981', '#0891b2'],
+            borderWidth: 2, borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: (ctx) => ctx.label + ': ' + U.formatBRL(ctx.raw) } } }
+        }
+      });
+    }
+  }
+
+  function renderAll() {
+    try {
+      renderKPIs();
+      renderAlertas();
+      renderTabelaPedidos();
+      renderPedidosKPIs();
+      renderTabelaComissoes();
+      renderTabelaComissoesPagas();
+      renderGraficos();
+    } catch (err) { console.error('Erro no renderAll:', err); }
+  }
+
+  // =========================================================
+  // SANITIZAÇÃO PDF
+  // =========================================================
+  function limparTextoPDF(texto) {
+    if (!texto) return '';
+    return texto
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ')
+      .replace(/(\d),([£;:])/g, '$1,00')
+      .replace(/(\d)\.([£;:])/g, '$1.00')
+      .replace(/\.([£;:])/g, '.00')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // =========================================================
+  // PARSERS
+  // =========================================================
+  function parsePedidos(texto) {
+    if (!texto || !texto.trim()) throw new Error('Conteúdo vazio');
+    const txt = texto.trim();
+
+    if (/Unid\s*[\t;,]?\s*Dt Transação/i.test(txt) || /Pedido Erecta/i.test(txt)) {
+      throw new Error(
+        'Este arquivo é um Informe de Comissões (formato MP-BIOS), não de Pedidos. ' +
+        'Selecione a aba "💰 Comissões" e importe novamente.'
+      );
+    }
+
+    if (txt.startsWith('[') || txt.startsWith('{')) {
+      const data = JSON.parse(txt);
+      const arr = Array.isArray(data) ? data : (data.pedidos || []);
+      return arr.map(p => {
+        const cod = String(p.cod || p.Cod || p.Codigo || '').trim();
+        return {
+          cod,
+          hospital: String(p.hospital || p.Hospital || p.Cliente || p.cliente || '').trim(),
+          regiao: String(p.regiao || p.Regiao || p.DDD || '').replace(/\D/g, ''),
+          valor: U.parseValorBR(p.valor || p.Valor || 0),
+          situacao: p.situacao || p.Situacao || p['Situação'] || 'Fechado',
+          tipo: p.tipo || detectarTipoPedido(cod)
+        };
+      }).filter(p => p.cod && p.hospital);
+    }
+
+    const linhas = txt.split(/\r?\n/).filter(l => l.trim());
+    const sep = linhas[0].includes(';') ? ';' : (linhas[0].includes('\t') ? '\t' : ',');
+    const header = linhas[0].toLowerCase();
+    const temHeader = /cod|hospital|cliente|valor/.test(header);
+
+    const dados = temHeader ? linhas.slice(1) : linhas;
+    return dados.map(linha => {
+      const cols = linha.split(sep).map(c => c.trim());
+      let cod, hospital, regiao, valor, situacao, tipo;
+      
+      if (temHeader) {
+        const h = header.split(sep).map(x => x.trim());
+        const get = (nome) => {
+          const i = h.findIndex(x => x.includes(nome));
+          return i >= 0 ? cols[i] : '';
+        };
+        cod = get('cod');
+        hospital = get('hospital') || get('cliente');
+        regiao = (get('regiao') || get('ddd')).replace(/\D/g, '');
+        valor = U.parseValorBR(get('valor'));
+        situacao = get('situacao') || get('situação') || 'Fechado';
+        tipo = get('tipo') || detectarTipoPedido(cod);
+      } else {
+        cod = cols[0] || '';
+        hospital = cols[1] || '';
+        regiao = (cols[2] || '').replace(/\D/g, '');
+        valor = U.parseValorBR(cols[3]);
+        situacao = cols[4] || 'Fechado';
+        tipo = cols[5] || detectarTipoPedido(cod);
+      }
+      
+      tipo = String(tipo).toUpperCase();
+      if (tipo !== 'SERVICO' && tipo !== 'VENDA') tipo = detectarTipoPedido(cod);
+      
+      return { cod, hospital, regiao, valor, situacao, tipo };
+    }).filter(p => p.cod && p.hospital);
+  }
+
+  function parseComissoes(texto) {
+    if (!texto || !texto.trim()) throw new Error('Conteúdo vazio');
+    const txt = texto.trim();
+
+    if (/Unid\s*[\t;,]?\s*Dt Transação/i.test(txt) || /Pedido Erecta/i.test(txt)) {
+      console.log('📋 Detectado CSV do sistema MP-BIOS');
+      return parseComissoesMPBios(txt);
+    }
+
+    let dataInforme = null;
+    const matchData = txt.match(/Data\s+Informe\s*(\d{2})\/(\d{2})\/(\d{4})/i);
+    if (matchData) {
+      dataInforme = `${matchData[3]}-${matchData[2]}-${matchData[1]}`;
+    }
+    if (!dataInforme) {
+      dataInforme = document.getElementById('dataInformeInput').value || state.dataInforme;
+    }
+    const inputData = document.getElementById('dataInformeInput');
+    if (inputData && matchData) inputData.value = dataInforme;
+
+    if (txt.startsWith('[') || txt.startsWith('{')) {
+      try {
+        const data = JSON.parse(txt);
+        const arr = Array.isArray(data) ? data : (data.comissoes || []);
+        return arr.map(c => ({
+          dev: c.dev || c.Dev || '',
+          numPedido: String(c.numPedido || c.NumPedido || c.pedido || ''),
+          cliente: c.cliente || c.Cliente || '',
+          dataInforme: c.dataInforme || dataInforme,
+          dtEmissao: c.dtEmissao || null,
+          base: U.parseValorBR(c.base || 0),
+          percentual: parseFloat(c.percentual || 10),
+          comissao: U.parseValorBR(c.comissao || 0),
+          pago: false, dataPagamento: null
+        })).filter(c => c.dev);
+      } catch (err) { /* segue */ }
+    }
+
+    const resultados = [];
+    const vistos = new Set();
+
+    // Regex com data antes do DEV
+    const regexComData = /(\d{2}\/\d{2}\/\d{4})\s+[^\n]{0,300}?(DEV[\-\w\/]+)\s+([A-Za-zÀ-ú][A-Za-zÀ-ú\s\.]*?)\s+([\d.,]+[£;:]?)\s+([\d.,]+)\s*%\s+([\d.,]+[£;:]?)/gi;
+    let m;
+    while ((m = regexComData.exec(txt)) !== null) {
+      const dtEmissao = U.parseDateBRtoISO(m[1]);
+      const dev = m[2].trim();
+      const cliente = m[3].trim();
+      const base = U.parseValorBR(m[4]);
+      const percentual = U.parseValorBR(m[5]);
+      const comissao = U.parseValorBR(m[6]);
+      if (base <= 0 || comissao <= 0) continue;
+      const chave = `${dev}|${dtEmissao || 'SEM_DATA'}|${base}|${comissao}`;
+      if (vistos.has(chave)) continue;
+      vistos.add(chave);
+      resultados.push({
+        dev, numPedido: '', cliente,
+        dataInforme, dtEmissao, base, percentual, comissao,
+        pago: false, dataPagamento: null
+      });
+    }
+
+    // Fallback: regex sem data
+    if (resultados.length === 0) {
+      const regexFlex = /[·\-•\.]?\s*(DEV[\-\w\/]+)\s+([A-Za-zÀ-ú][A-Za-zÀ-ú\s\.]*?)\s+([\d.,]+[£;:]?)\s+([\d.,]+)\s*%\s+([\d.,]+[£;:]?)/gi;
+      while ((m = regexFlex.exec(txt)) !== null) {
+        const dev = m[1].trim();
+        const cliente = m[2].trim();
+        const base = U.parseValorBR(m[3]);
+        const percentual = U.parseValorBR(m[4]);
+        const comissao = U.parseValorBR(m[5]);
+        if (base <= 0 || comissao <= 0) continue;
+        const chave = `${dev}|SEM_DATA|${base}|${comissao}`;
+        if (vistos.has(chave)) continue;
+        vistos.add(chave);
+        resultados.push({
+          dev, numPedido: '', cliente,
+          dataInforme, dtEmissao: null, base, percentual, comissao,
+          pago: false, dataPagamento: null
+        });
+      }
+    }
+
+    if (resultados.length === 0) {
+      throw new Error('Não foi possível extrair comissões do arquivo.');
+    }
+    return resultados;
+  }
+
+  function parseComissoesMPBios(texto) {
+    const primeiraLinha = texto.split(/\r?\n/)[0];
+    let sep = '\t';
+    if (primeiraLinha.includes('\t')) sep = '\t';
+    else if (primeiraLinha.includes(';')) sep = ';';
+    else if (primeiraLinha.includes(',')) sep = ',';
+
+    const linhas = texto.split(/\r?\n/);
+    const resultados = [];
+
+    let headerIdx = -1;
+    for (let i = 0; i < linhas.length; i++) {
+      if (/Unid\s*\t?\s*Dt Transação/i.test(linhas[i]) || /Pedido Erecta/i.test(linhas[i])) {
+        headerIdx = i;
+        break;
+      }
+    }
+    if (headerIdx === -1) throw new Error('Cabeçalho MP-BIOS não encontrado');
+
+    const header = linhas[headerIdx].split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+    const idx = {
+      pedido:       header.findIndex(h => /^Pedido$/i.test(h)),
+      cliente:      header.findIndex(h => /^Cliente$/i.test(h)),
+      titulo:       header.findIndex(h => /^Título$/i.test(h)),
+      dtEmissao:    header.findIndex(h => /Dt Emissão/i.test(h)),
+      pedidoErecta: header.findIndex(h => /Pedido Erecta/i.test(h)),
+      baseCom:      header.findIndex(h => /Base Comissões/i.test(h)),
+      pctCom:       header.findIndex(h => /%\s*comissão/i.test(h)),
+      vrCom:        header.findIndex(h => /Vr Comissão/i.test(h))
+    };
+
+    console.log('📋 Índices MP-BIOS:', idx);
+
+    const dataInforme = document.getElementById('dataInformeInput').value || state.dataInforme;
+
+    for (let i = headerIdx + 1; i < linhas.length; i++) {
+      const linha = linhas[i];
+      if (!linha.trim()) continue;
+
+      const cols = linha.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+      const dev = cols[idx.pedidoErecta] || '';
+      if (!dev || !/DEV-/.test(dev)) continue;
+
+      const base = U.parseValorBR(cols[idx.baseCom] || 0);
+      const pct = U.parseValorBR(cols[idx.pctCom] || 10);
+      const comissao = U.parseValorBR(cols[idx.vrCom] || 0);
+      if (base <= 0 && comissao <= 0) continue;
+
+      const dtEmissaoRaw = cols[idx.dtEmissao] || '';
+      const dtEmissao = U.parseDateBRtoISO(dtEmissaoRaw);
+
+      resultados.push({
+        dev: dev.trim(),
+        numPedido: (cols[idx.titulo] || '').trim(),
+        cliente: (cols[idx.cliente] || '').trim(),
+        dataInforme,
+        dtEmissao,
+        base: base || comissao * 10,
+        percentual: pct || 10,
+        comissao,
+        pago: false,
+        dataPagamento: null
+      });
+    }
+
+    console.log(`📋 ${resultados.length} comissões extraídas do CSV MP-BIOS`);
+    return resultados;
+  }
+
+  // =========================================================
+  // LEITURA DE ARQUIVOS
+  // =========================================================
+  async function lerArquivo(file) {
+    const nome = file.name.toLowerCase();
+    if (nome.endsWith('.pdf')) {
+      if (!window.pdfjsLib) throw new Error('Biblioteca PDF.js não carregada. Recarregue a página.');
+      return await lerPDF(file);
+    }
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsText(file, 'UTF-8');
+    });
+  }
+
+  async function lerPDF(file) {
+    const arrayBuffer = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = () => reject(new Error('Erro ao ler PDF'));
+      reader.readAsArrayBuffer(file);
+    });
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let textoTotal = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const textoPagina = content.items.map(item => item.str).join(' ');
+      textoTotal += '\n' + textoPagina;
+    }
+    return textoTotal;
+  }
+
+  async function processarArquivos(fileList, tipoForcado) {
+    const arquivos = Array.from(fileList);
+    if (arquivos.length > MAX_ARQUIVOS) {
+      alert(`Máximo de ${MAX_ARQUIVOS} arquivos por vez. Você selecionou ${arquivos.length}.`);
+      arquivos.length = MAX_ARQUIVOS;
+    }
+
+    const tipo = tipoForcado || state.importTipo;
+    console.log(`📦 Processando ${arquivos.length} arquivo(s) como: ${tipo}`);
+
+    state.importTipo = tipo;
+
+    state.arquivosSelecionados = arquivos.map(f => ({
+      file: f, nome: f.name, tamanho: f.size,
+      dados: null, status: 'aguardando', erro: null
+    }));
+
+    renderListaArquivos();
+    document.getElementById('progressGeral').style.display = 'block';
+
+    const total = state.arquivosSelecionados.length;
+
+    for (let i = 0; i < total; i++) {
+      const item = state.arquivosSelecionados[i];
+      item.status = 'processando';
+      renderListaArquivos();
+      atualizarProgresso((i / total) * 100);
+
+      try {
+        let texto = await lerArquivo(item.file);
+        if (item.nome.toLowerCase().endsWith('.pdf')) {
+          texto = limparTextoPDF(texto);
+        }
+        const dados = tipo === 'comissoes' ? parseComissoes(texto) : parsePedidos(texto);
+        if (!dados.length) throw new Error('Nenhum registro válido');
+        item.dados = dados;
+        item.status = 'ok';
+        console.log(`✅ ${item.nome}: ${dados.length} registro(s) como "${tipo}"`);
+      } catch (err) {
+        console.error('❌ Erro no arquivo', item.nome, err);
+        item.erro = err.message || 'Erro desconhecido';
+        item.status = 'erro';
+      }
+
+      renderListaArquivos();
+      atualizarProgresso(((i + 1) / total) * 100);
+    }
+
+    let todosDados = state.arquivosSelecionados
+      .filter(a => a.status === 'ok')
+      .flatMap(a => a.dados);
+
+    if (tipo === 'comissoes' && todosDados.length > 0) {
+      const { unicas, ignoradas } = filtrarComissoesDuplicadas(todosDados);
+      state.importIgnoradas = ignoradas;
+      todosDados = unicas;
+      
+      if (ignoradas.length > 0) {
+        console.warn(`⚠️ ${ignoradas.length} comissão(ões) ignorada(s):`, ignoradas);
+      }
+      
+      if (unicas.length === 0) {
+        document.getElementById('previewImport').innerHTML = 
+          `<div class="preview-error">⚠️ Todas as ${ignoradas.length} comissão(ões) do arquivo já estão cadastradas (mesmo DEV + Dt Emissão) ou são duplicadas. Nada será adicionado.</div>`;
+        setTimeout(() => {
+          document.getElementById('progressGeral').style.display = 'none';
+        }, 800);
+        return;
+      }
+    } else {
+      state.importIgnoradas = [];
+    }
+
+    if (todosDados.length) {
+      state.importPreview = { tipo, dados: todosDados, arquivo: `${state.arquivosSelecionados.length} arquivo(s)` };
+      renderPreview();
+    } else {
+      document.getElementById('previewImport').innerHTML = `<div class="preview-error">❌ Nenhum registro válido encontrado</div>`;
+    }
+
+    setTimeout(() => {
+      document.getElementById('progressGeral').style.display = 'none';
+    }, 800);
+  }
+
+  function atualizarProgresso(pct) {
+    document.getElementById('progressGeralFill').style.width = Math.min(pct, 100) + '%';
+  }
+
+  function renderListaArquivos() {
+    const container = document.getElementById('listaArquivos');
+    if (!state.arquivosSelecionados.length) {
+      container.innerHTML = '';
+      return;
+    }
+    const totalOk = state.arquivosSelecionados.filter(a => a.status === 'ok').length;
+    const totalErro = state.arquivosSelecionados.filter(a => a.status === 'erro').length;
+    const totalRegistros = state.arquivosSelecionados
+      .filter(a => a.status === 'ok')
+      .reduce((sum, a) => sum + a.dados.length, 0);
+
+    container.innerHTML = `
+      <div class="preview-info">
+        📦 <strong>${state.arquivosSelecionados.length}</strong> arquivo(s) ·
+        ✅ ${totalOk} ok ·
+        ❌ ${totalErro} erro ·
+        📊 ${totalRegistros} registro(s) lido(s)
+      </div>
+      <div class="file-list">
+        ${state.arquivosSelecionados.map(a => {
+          let statusLabel = '⏳ Aguardando';
+          let statusClass = '';
+          if (a.status === 'processando') { statusLabel = '⏳ Processando...'; statusClass = 'processando'; }
+          else if (a.status === 'ok') { statusLabel = `✅ ${a.dados.length} registro(s)`; statusClass = 'ok'; }
+          else if (a.status === 'erro') { statusLabel = `❌ ${a.erro || 'Erro'}`; statusClass = 'erro'; }
+          const icone = a.nome.toLowerCase().endsWith('.pdf') ? '📕'
+                      : a.nome.toLowerCase().endsWith('.csv') ? '📊'
+                      : a.nome.toLowerCase().endsWith('.json') ? '📋' : '📄';
+          return `
+            <div class="file-item ${statusClass}">
+              <span class="icon">${icone}</span>
+              <span class="nome">${a.nome}</span>
+              <span class="status">${statusLabel}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function mostrarErroPreview(msg) {
+    document.getElementById('previewImport').innerHTML = `<div class="preview-error">❌ ${msg}</div>`;
+  }
+
+  function processarTextoAtual() {
+    const tipo = state.importTipo;
+    const texto = tipo === 'pedidos'
+      ? document.getElementById('textoPedidos').value
+      : document.getElementById('textoComissoes').value;
+    if (!texto.trim()) { mostrarErroPreview('Nenhum texto colado'); return; }
+    try {
+      let dados = tipo === 'pedidos' ? parsePedidos(texto) : parseComissoes(texto);
+      if (!dados.length) throw new Error('Nenhum registro válido');
+      
+      if (tipo === 'comissoes') {
+        const { unicas, ignoradas } = filtrarComissoesDuplicadas(dados);
+        state.importIgnoradas = ignoradas;
+        dados = unicas;
+        
+        if (dados.length === 0) {
+          mostrarErroPreview(`⚠️ Todas as ${ignoradas.length} comissão(ões) já estão cadastradas (mesmo DEV + Dt Emissão) ou são duplicadas.`);
+          return;
+        }
+      } else {
+        state.importIgnoradas = [];
+      }
+      
+      state.importPreview = { tipo, dados, arquivo: 'texto-colado' };
+      renderPreview();
+    } catch (err) { mostrarErroPreview(err.message); }
+  }
+
+  function renderPreview() {
+    if (!state.importPreview) return;
+    const { tipo, dados, arquivo } = state.importPreview;
+    const preview = document.getElementById('previewImport');
+
+    if (tipo === 'pedidos') {
+      preview.innerHTML = `
+        <div class="preview-info">📄 <strong>${arquivo}</strong> — ${dados.length} pedido(s) · <em>Edite se necessário</em></div>
+        <div class="preview-table">
+          <table>
+            <thead><tr><th>Cód.</th><th>Tipo</th><th>Hospital</th><th>Região</th><th>Valor</th><th>Situação</th><th></th></tr></thead>
+            <tbody>
+              ${dados.map((p, i) => `
+                <tr data-pedido-idx="${i}">
+                  <td><input type="text" value="${p.cod}" data-campo="cod"></td>
+                  <td>
+                    <select data-campo="tipo">
+                      <option value="VENDA" ${p.tipo === 'VENDA' ? 'selected' : ''}>💰 VENDA</option>
+                      <option value="SERVICO" ${p.tipo === 'SERVICO' ? 'selected' : ''}>🔧 SERV.</option>
+                    </select>
+                  </td>
+                  <td><input type="text" value="${p.hospital}" data-campo="hospital"></td>
+                  <td><input type="text" value="${p.regiao}" data-campo="regiao" style="width:60px"></td>
+                  <td><input type="number" value="${p.valor}" data-campo="valor" step="0.01"></td>
+                  <td><input type="text" value="${p.situacao}" data-campo="situacao"></td>
+                  <td><button class="btn btn-danger btn-sm" data-remove-preview-pedido="${i}">🗑️</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      const ignoradas = state.importIgnoradas || [];
+      const avisoIgnoradas = ignoradas.length > 0 
+        ? `<div class="preview-warning">
+            ⚠️ <strong>${ignoradas.length} comissão(ões) ignorada(s)</strong> por DEV + Dt Emissão já cadastrados ou duplicados:
+            <ul style="margin:6px 0 0 20px;font-size:0.75rem;">
+              ${ignoradas.slice(0, 8).map(i => 
+                `<li><code>${i.dev}</code>${i.dtEmissao ? ` · Dt ${U.formatDate(U.parseDate(i.dtEmissao))}` : ''} — ${i.motivo}</li>`
+              ).join('')}
+              ${ignoradas.length > 8 ? `<li><em>... e mais ${ignoradas.length - 8}</em></li>` : ''}
+            </ul>
+          </div>`
+        : '';
+      
+      preview.innerHTML = `
+        ${avisoIgnoradas}
+        <div class="preview-info">📄 <strong>${arquivo}</strong> — ${dados.length} comissão(ões) nova(s) · <em>Edite se necessário</em></div>
+        <div class="preview-table">
+          <table>
+            <thead><tr><th>Dev.</th><th>Dt Emissão</th><th>Nº Pedido</th><th>Cliente</th><th>Base</th><th>%</th><th>Comissão</th><th></th></tr></thead>
+            <tbody>
+              ${dados.map((c, i) => {
+                const dup = isDevDuplicado(c.dev, c.dtEmissao, i);
+                const dtFmt = c.dtEmissao ? U.formatDate(U.parseDate(c.dtEmissao)) : '';
+                return `
+                  <tr data-comissao-idx="${i}">
+                    <td><input type="text" value="${c.dev}" data-campo="dev" class="${dup ? 'dev-duplicado' : ''}"></td>
+                    <td><input type="text" value="${dtFmt}" data-campo="dtEmissao" placeholder="dd/mm/aaaa" class="${dup ? 'dev-duplicado' : ''}"></td>
+                    <td><input type="text" value="${c.numPedido || ''}" data-campo="numPedido"></td>
+                    <td><input type="text" value="${c.cliente}" data-campo="cliente"></td>
+                    <td><input type="number" value="${c.base}" data-campo="base" step="0.01"></td>
+                    <td><input type="number" value="${c.percentual}" data-campo="percentual" step="0.01" style="width:60px"></td>
+                    <td><input type="number" value="${c.comissao}" data-campo="comissao" step="0.01"></td>
+                    <td><button class="btn btn-danger btn-sm" data-remove-preview-comissao="${i}">🗑️</button></td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+  }
+
+  // =========================================================
+  // API PÚBLICA
+  // =========================================================
+  const App = {
+    marcarPago(idx) {
+      const c = DB.comissoes[idx];
+      if (!c) return;
+      const ref = document.getElementById('dataReferencia').value || state.dataReferencia;
+      c.pago = true;
+      c.dataPagamento = ref;
+      renderAll();
+    },
+    marcarPendente(idx) {
+      const c = DB.comissoes[idx];
+      if (!c) return;
+      c.pago = false;
+      c.dataPagamento = null;
+      renderAll();
+    },
+    removerPedido(i) {
+      if (confirm('Remover este pedido?')) {
+        DB.pedidos.splice(i, 1);
+        state.pedidosExpandidos.clear();
+        renderAll();
+      }
+    },
+    toggleDetalhePedido(i) {
+      if (state.pedidosExpandidos.has(i)) {
+        state.pedidosExpandidos.delete(i);
+      } else {
+        state.pedidosExpandidos.add(i);
+      }
+      renderTabelaPedidos();
+    },
+    setFiltroPedidos(filtro) {
+      state.filtroPedidos = filtro;
+      document.querySelectorAll('.filtro[data-filtro]').forEach(f => {
+        f.classList.toggle('active', f.dataset.filtro === filtro);
+      });
+      renderTabelaPedidos();
+    },
+    // ✅ Filtros de data + agrupamento
+    aplicarFiltroDatas() {
+      const de = document.getElementById('filtroDtDe').value;
+      const ate = document.getElementById('filtroDtAte').value;
+      if (de && ate && de > ate) {
+        alert('A data "De" não pode ser maior que a data "Até".');
+        return;
+      }
+      state.filtroDtDe = de;
+      state.filtroDtAte = ate;
+      renderTabelaComissoes();
+      renderTabelaComissoesPagas();
+    },
+    limparFiltroDatas() {
+      document.getElementById('filtroDtDe').value = '';
+      document.getElementById('filtroDtAte').value = '';
+      state.filtroDtDe = '';
+      state.filtroDtAte = '';
+      renderTabelaComissoes();
+      renderTabelaComissoesPagas();
+    },
+    toggleAgruparDev(ativo) {
+      state.agruparPorDev = ativo;
+      state.gruposExpandidos.clear();
+      renderTabelaComissoes();
+      renderTabelaComissoesPagas();
+    },
+    toggleGrupoDev(chave) {
+      if (state.gruposExpandidos.has(chave)) {
+        state.gruposExpandidos.delete(chave);
+      } else {
+        state.gruposExpandidos.add(chave);
+      }
+      renderTabelaComissoes();
+      renderTabelaComissoesPagas();
+    },
+    abrirModalImportar() {
+      document.getElementById('modalImportar').classList.add('active');
+      document.getElementById('previewImport').innerHTML = '';
+      document.getElementById('listaArquivos').innerHTML = '';
+      document.getElementById('progressGeral').style.display = 'none';
+      document.getElementById('progressGeralFill').style.width = '0%';
+      state.importPreview = null;
+      state.arquivosSelecionados = [];
+      state.importIgnoradas = [];
+      const activeTab = document.querySelector('.import-tab.active');
+      if (activeTab && activeTab.dataset.import) {
+        state.importTipo = activeTab.dataset.import;
+      }
+      console.log('🔄 Modal aberto · tipo:', state.importTipo);
+    },
+    fecharModalImportar() {
+      document.getElementById('modalImportar').classList.remove('active');
+      document.getElementById('previewImport').innerHTML = '';
+      document.getElementById('listaArquivos').innerHTML = '';
+      state.importPreview = null;
+      state.arquivosSelecionados = [];
+      state.importIgnoradas = [];
+    },
+    processarImportacao() { processarTextoAtual(); },
+    confirmarImportacao() {
+      if (!state.importPreview) {
+        processarTextoAtual();
+        if (!state.importPreview) return;
+      }
+      const { tipo, dados } = state.importPreview;
+      
+      if (tipo === 'comissoes') {
+        const duplicados = [];
+        const chavesVistas = new Set();
+        dados.forEach(c => {
+          const chave = chaveDuplicata(c);
+          const existeNoBanco = DB.comissoes.some(bc => chaveDuplicata(bc) === chave);
+          if (existeNoBanco || chavesVistas.has(chave)) {
+            duplicados.push({ dev: c.dev, dtEmissao: c.dtEmissao });
+          }
+          chavesVistas.add(chave);
+        });
+        
+        if (duplicados.length > 0) {
+          const lista = duplicados
+            .map(d => `• ${d.dev}${d.dtEmissao ? ` (Dt ${U.formatDate(U.parseDate(d.dtEmissao))})` : ''}`)
+            .join('\n');
+          alert(
+            `❌ Não é possível importar: ${duplicados.length} duplicata(s) detectada(s):\n\n` +
+            lista.slice(0, 500) +
+            `\n\nCorrija no preview antes de confirmar.`
+          );
+          return;
+        }
+      }
+      
+      if (tipo === 'pedidos') {
+        DB.pedidos = DB.pedidos.concat(dados);
+      } else {
+        if (dados[0] && dados[0].dataInforme) {
+          state.dataInforme = dados[0].dataInforme;
+          document.getElementById('dataInformeHeader').textContent = U.formatDate(U.parseDate(state.dataInforme));
+        }
+        DB.comissoes = DB.comissoes.concat(dados);
+      }
+      const qtd = dados.length;
+      const ignoradas = state.importIgnoradas?.length || 0;
+      App.fecharModalImportar();
+      document.getElementById('textoPedidos').value = '';
+      document.getElementById('textoComissoes').value = '';
+      renderAll();
+      
+      let msg = `✓ ${qtd} registro(s) importado(s) com sucesso!`;
+      if (ignoradas > 0) msg += `\n⚠️ ${ignoradas} registro(s) duplicado(s) foram ignorados.`;
+      setTimeout(() => alert(msg), 100);
+    },
+    exportar() {
+      const linhas = [['Tipo', 'Codigo/Dev', 'TipoPedido', 'DtEmissao', 'Cliente', 'Regiao/Pedido', 'Valor', 'Situacao/Pago', 'Data']];
+      DB.pedidos.forEach(p => {
+        const tipo = p.tipo || detectarTipoPedido(p.cod);
+        linhas.push(['PEDIDO', p.cod, tipo, '', p.hospital, U.getRegiaoLabel(p.regiao), p.valor.toFixed(2), p.situacao, '']);
+      });
+      DB.comissoes.forEach(c => linhas.push([
+        'COMISSAO', c.dev, detectarTipoPedido(c.dev), c.dtEmissao || '', c.cliente, c.numPedido, c.comissao.toFixed(2),
+        c.pago ? 'PAGA' : 'PENDENTE',
+        c.pago ? c.dataPagamento : c.dataInforme
+      ]));
+      const csv = linhas.map(l => l.join(';')).join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'controle_comercial_2026.csv';
+      link.click();
+    }
+  };
+
+  window.App = App;
+
+  // =========================================================
+  // SETUP
+  // =========================================================
+  function setupTabs() {
+    document.querySelectorAll('.tab[data-tab]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab)?.classList.add('active');
+      });
+    });
+  }
+
+  function setupFiltros() {
+    document.querySelectorAll('.filtro[data-filtro]').forEach(f => {
+      f.addEventListener('click', () => App.setFiltroPedidos(f.dataset.filtro));
+    });
+  }
+
+  function setupImportTabs() {
+    document.querySelectorAll('.import-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.import-tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.import-pane').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        state.importTipo = t.dataset.import;
+        console.log('🔄 Aba de importação alterada para:', state.importTipo);
+        const pane = document.getElementById('pane-' + state.importTipo);
+        if (pane) pane.classList.add('active');
+        document.getElementById('previewImport').innerHTML = '';
+        document.getElementById('listaArquivos').innerHTML = '';
+        state.importPreview = null;
+        state.arquivosSelecionados = [];
+        state.importIgnoradas = [];
+      });
+    });
+    const activeTab = document.querySelector('.import-tab.active');
+    if (activeTab) state.importTipo = activeTab.dataset.import;
+  }
+
+  function setupDropZones() {
+    const dz1 = document.getElementById('dropPedidos');
+    const fi1 = document.getElementById('filePedidos');
+    if (dz1 && fi1) {
+      dz1.addEventListener('click', () => fi1.click());
+      fi1.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+          console.log('📂 Arquivo(s) selecionado(s) na aba PEDIDOS');
+          processarArquivos(e.target.files, 'pedidos');
+        }
+        fi1.value = '';
+      });
+      ['dragenter', 'dragover'].forEach(ev => {
+        dz1.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dz1.classList.add('dragover'); });
+      });
+      ['dragleave', 'drop'].forEach(ev => {
+        dz1.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dz1.classList.remove('dragover'); });
+      });
+      dz1.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length) {
+          console.log('📂 Drop na aba PEDIDOS');
+          processarArquivos(e.dataTransfer.files, 'pedidos');
+        }
+      });
+    }
+
+    const dz2 = document.getElementById('dropComissoes');
+    const fi2 = document.getElementById('fileComissoes');
+    if (dz2 && fi2) {
+      dz2.addEventListener('click', () => fi2.click());
+      fi2.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+          console.log('📂 Arquivo(s) selecionado(s) na aba COMISSÕES');
+          processarArquivos(e.target.files, 'comissoes');
+        }
+        fi2.value = '';
+      });
+      ['dragenter', 'dragover'].forEach(ev => {
+        dz2.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dz2.classList.add('dragover'); });
+      });
+      ['dragleave', 'drop'].forEach(ev => {
+        dz2.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dz2.classList.remove('dragover'); });
+      });
+      dz2.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length) {
+          console.log('📂 Drop na aba COMISSÕES');
+          processarArquivos(e.dataTransfer.files, 'comissoes');
+        }
+      });
+    }
+  }
+
+  function setupDelegacao() {
+    // Tabela Pedidos
+    document.getElementById('tabelaPedidos').addEventListener('click', (e) => {
+      const btnRem = e.target.closest('[data-remove-pedido]');
+      if (btnRem) {
+        const i = parseInt(btnRem.dataset.removePedido, 10);
+        if (!isNaN(i)) App.removerPedido(i);
+        return;
+      }
+      const btnToggle = e.target.closest('[data-toggle-detalhe]');
+      if (btnToggle) {
+        const i = parseInt(btnToggle.dataset.toggleDetalhe, 10);
+        if (!isNaN(i)) App.toggleDetalhePedido(i);
+      }
+    });
+
+    // ✅ Toda a aba Comissões (pois as linhas podem estar dentro de grupos)
+    document.getElementById('tab-comissoes').addEventListener('change', (e) => {
+      const chk = e.target.closest('[data-marcar-pago]');
+      if (chk) {
+        const i = parseInt(chk.dataset.marcarPago, 10);
+        if (!isNaN(i)) {
+          if (chk.checked) App.marcarPago(i);
+          else App.marcarPendente(i);
+        }
+      }
+    });
+
+    document.getElementById('tab-comissoes').addEventListener('click', (e) => {
+      // Toggle de grupo
+      const btnToggle = e.target.closest('[data-toggle-grupo]');
+      if (btnToggle) {
+        const dev = btnToggle.dataset.toggleGrupo;
+        const ehPago = btnToggle.dataset.grupoPago === 'true';
+        const chave = dev + '||' + (ehPago ? 'pago' : 'pendente');
+        App.toggleGrupoDev(chave);
+        return;
+      }
+      
+      // Botão desfazer
+      const btnPend = e.target.closest('[data-marcar-pendente]');
+      if (btnPend) {
+        const i = parseInt(btnPend.dataset.marcarPendente, 10);
+        if (!isNaN(i)) App.marcarPendente(i);
+      }
+    });
+
+    // Filtros de data (aplicam ao mudar)
+    document.getElementById('filtroDtDe').addEventListener('change', () => App.aplicarFiltroDatas());
+    document.getElementById('filtroDtAte').addEventListener('change', () => App.aplicarFiltroDatas());
+
+    // Toggle de agrupamento
+    document.getElementById('toggleAgruparDev').addEventListener('change', (e) => App.toggleAgruparDev(e.target.checked));
+
+    // Edição inline no preview
+    document.getElementById('previewImport').addEventListener('input', (e) => {
+      const input = e.target.closest('[data-campo]');
+      if (!input) return;
+      const row = input.closest('tr');
+      if (!row) return;
+      const campo = input.dataset.campo;
+      let valor = input.value;
+      if (['valor', 'base', 'comissao', 'percentual'].includes(campo)) {
+        valor = parseFloat(valor) || 0;
+      }
+      const pedidoIdx = row.dataset.pedidoIdx;
+      const comissaoIdx = row.dataset.comissaoIdx;
+      
+      if (pedidoIdx !== undefined && state.importPreview?.tipo === 'pedidos') {
+        state.importPreview.dados[parseInt(pedidoIdx, 10)][campo] = valor;
+      } else if (comissaoIdx !== undefined && state.importPreview?.tipo === 'comissoes') {
+        const i = parseInt(comissaoIdx, 10);
+        const c = state.importPreview.dados[i];
+        
+        if (campo === 'dtEmissao') {
+          const iso = U.parseDateBRtoISO(valor);
+          c.dtEmissao = iso;
+        } else {
+          c[campo] = valor;
+        }
+        
+        if (campo === 'dev' || campo === 'dtEmissao') {
+          const dup = isDevDuplicado(c.dev, c.dtEmissao, i);
+          row.querySelectorAll('input[data-campo="dev"], input[data-campo="dtEmissao"]').forEach(inp => {
+            inp.classList.toggle('dev-duplicado', dup);
+          });
+        }
+      }
+    });
+
+    document.getElementById('previewImport').addEventListener('change', (e) => {
+      const sel = e.target.closest('select[data-campo]');
+      if (sel) {
+        const row = sel.closest('tr');
+        if (!row) return;
+        const campo = sel.dataset.campo;
+        const pedidoIdx = row.dataset.pedidoIdx;
+        if (pedidoIdx !== undefined && state.importPreview?.tipo === 'pedidos') {
+          state.importPreview.dados[parseInt(pedidoIdx, 10)][campo] = sel.value;
+        }
+      }
+    });
+
+    document.getElementById('previewImport').addEventListener('click', (e) => {
+      const btnPed = e.target.closest('[data-remove-preview-pedido]');
+      const btnCom = e.target.closest('[data-remove-preview-comissao]');
+      if (btnPed) {
+        const i = parseInt(btnPed.dataset.removePreviewPedido, 10);
+        state.importPreview.dados.splice(i, 1);
+        renderPreview();
+      } else if (btnCom) {
+        const i = parseInt(btnCom.dataset.removePreviewComissao, 10);
+        state.importPreview.dados.splice(i, 1);
+        renderPreview();
+      }
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+    });
+
+    document.getElementById('dataReferencia').addEventListener('change', (e) => {
+      state.dataReferencia = e.target.value;
+      renderAll();
+    });
+  }
+
+  function init() {
+    if (state.inicializado) return;
+    state.inicializado = true;
+    try {
+      document.getElementById('dataInformeHeader').textContent = U.formatDate(U.parseDate(state.dataInforme));
+      setupTabs();
+      setupFiltros();
+      setupImportTabs();
+      setupDropZones();
+      setupDelegacao();
+      renderAll();
+      if (window.pdfjsLib) {
+        console.log('✓ PDF.js carregado');
+      } else {
+        console.warn('⚠️ PDF.js não carregou');
+      }
+      console.log('✓ Aplicação inicializada com filtros e agrupamento');
+    } catch (err) { console.error('Erro na inicialização:', err); }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
